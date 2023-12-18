@@ -23,7 +23,7 @@ class TrainingConfig:
     finetune_method: str = ""
     total_epochs: int = 1
     # SFT specific
-    max_steps: int = 20000
+    max_steps: int = 2000
     # PPO specific
     actor_weights: str = ""
     critic_weights: str = ""

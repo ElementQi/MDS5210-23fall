@@ -63,7 +63,7 @@ torchinfo==1.7.2
 # torch==2.0.0.dev20230228+cu117
 # torchaudio==2.0.0.dev20230301+cu117
 # torchvision==0.15.0.dev20230227+cu117
-sentencepiece==0.1.97
+sentencepiece==0.1.99
 tqdm==4.64.1
 transformers==4.26.1
 typing_extensions==4.4.0
@@ -72,3 +72,4 @@ Werkzeug==2.2.3
 xxhash==3.2.0
 yapf==0.32.0
 yarl==1.8.2
+wandb==0.16.1

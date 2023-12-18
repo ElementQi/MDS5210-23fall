@@ -6,6 +6,7 @@ from datetime import datetime
 from torch import nn
 from torch.utils.data import DataLoader
 from configs import TrainingConfig
+from tqdm import tqdm
 
 
 class Trainer:
@@ -79,4 +80,90 @@ class SFTTrainer(Trainer):
 
     def fit(self):
         # TODO: complete the SFT training.
-        pass
+
+        # wandb section
+        # import wandb
+        # wandb.init(
+        #     # set the wandb project where this run will be logged
+        #     project="gpt2-12-18-5-16",
+            
+        #     # track hyperparameters and run metadata
+        #     config=self.cfg.dict()
+        # )
+
+        # mount model to device, ready to train
+        self.model.to(self.device)
+        
+        # we need to split train data into train and validation data. What need to mentioned is that we can't use test data since DATA SNOOPING.
+
+
+        # print the number of parameters in the model
+        # print(sum(p.numel() for p in self.model.parameters())/1e6, 'M parameters')
+
+        # create a PyTorch optimizer
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.cfg.lr)
+
+        eval_interval = 10
+        # choose eval_iters data from validation dataset
+        eval_iters = 3
+
+        print("start train")
+        # for iter in tqdm(range(self.cfg.max_steps)):
+        for iter in tqdm(range(20)):
+
+            # every once in a while evaluate the loss on train and val sets
+            if iter % eval_interval == 0 or iter == self.cfg.max_steps - 1:
+                out = {}
+
+                # set model to evaluation mode
+                print("start validation")
+                self.model.eval()
+                for split in ['train', 'val']:
+                    losses = torch.zeros(eval_iters)
+                    for k in tqdm(range(eval_iters)):
+                        X, Y = next(self.train_dataloader) if split == 'train' else next(self.test_dataloader)
+                        X, Y = X.to(self.device), Y.to(self.device)
+                        
+                        logits_ = self.model(X)
+                        B_, T_, C_ = logits_.shape
+                        logits_ = logits_.view(B_*T_, C_)
+                        targets_ = Y.view(B_*T_)
+                        loss_ = nn.functional.cross_entropy(logits_, targets_)
+
+                        losses[k] = loss_.item()
+                    out[split] = losses.mean()
+
+                # set model back to training mode
+                self.model.train()
+
+                train_loss = float(f"{out['train']:.4f}")
+                test_loss = float(f"{out['val']:.4f}")
+
+                print(f"step {iter}: train loss {train_loss}, val loss {test_loss}")
+
+                # wandb.log({"training error": train_loss, "test error": test_loss})
+
+                # save the model states in procedure
+                # self.save_states(step=iter, is_last=False)
+
+            # sample a batch of data
+            xb, yb = next(self.train_dataloader)
+            xb, yb = xb.to(self.device), yb.to(self.device)
+
+            # do forward section
+            logits = self.model(xb)
+
+            B, T, C = logits.shape
+            logits = logits.view(B*T, C)
+            targets = yb.view(B*T)
+
+            loss = nn.functional.cross_entropy(logits, targets)
+            self.optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            self.optimizer.step()
+
+        # save the final model states
+        # self.save_states(step=self.cfg.max_steps, is_last=True)
+
+        # [optional] finish the wandb run, necessary in notebooks
+        # wandb.finish()

@@ -2,18 +2,18 @@ import click
 import torch
 from trainers import SFTTrainer
 from gpt import GPT
-from dataset import EYLSFTStaticDataset
+from dataset import EYLSFTStaticDataset, SFTDataset
 from configs import get_configs
 
 # Avoid GPU version conflict (For Kaggle GPU only). Comment below two lines if you use local machine in order to speed up training.
-import torch._dynamo.config
-torch._dynamo.config.suppress_errors = True
+# import torch._dynamo.config
+# torch._dynamo.config.suppress_errors = True
 
 def train(pretrain, batch_size, exp_name):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
     cfg = get_configs("gpt2-medium") # change this line to select different models
-    cfg.max_steps = 200000 // batch_size
+    cfg.max_steps = 2000 // batch_size
     cfg.batch_size = batch_size
     cfg.pretrain = pretrain
     assert pretrain == "huggingface" # make sure the pretrained model is in the format of huggingface.
@@ -23,14 +23,17 @@ def train(pretrain, batch_size, exp_name):
     model = GPT.from_pretrained(cfg)
     
     # load SFT dataset
-    train_ds = EYLSFTStaticDataset(block_size=1024,
-                                   split='train',
-                                   max_examples=None,
-                                   tokenizer_name="tiktoken/gpt2")
-    test_ds = EYLSFTStaticDataset(block_size=1024,
-                                  split='test',
-                                  max_examples=None,
-                                  tokenizer_name="tiktoken/gpt2")
+    # train_ds = EYLSFTStaticDataset(block_size=1024,
+    #                                split='train',
+    #                                max_examples=None,
+    #                                tokenizer_name="tiktoken/gpt2")
+    # test_ds = EYLSFTStaticDataset(block_size=1024,
+    #                               split='test',
+    #                               max_examples=None,
+    #                               tokenizer_name="tiktoken/gpt2")
+    
+    train_ds = SFTDataset(block_size=1024, split="train", max_examples=None, tokenizer_name="tiktoken/gpt2")
+    test_ds = SFTDataset(block_size=1024, split="test", max_examples=None, tokenizer_name="tiktoken/gpt2")
     
     trainer = SFTTrainer(cfg, device, model, train_ds, test_ds)
     trainer.fit()

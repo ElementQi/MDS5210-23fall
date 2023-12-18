@@ -176,7 +176,10 @@ class SFTDataset(Dataset):
         
         if save:
             import json
-            json.dump(dataset_chosen, f"sft_{split}.json")
+            with open(f"sft_{split}.json", 'w') as file:
+                json.dump(dataset_chosen, file)
+
+            # json.dump(dataset_chosen, f"sft_{split}.json")
 
     def __len__(self):
         import sys
