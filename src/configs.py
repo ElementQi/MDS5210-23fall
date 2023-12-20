@@ -17,13 +17,14 @@ class TrainingConfig:
     exp_name: str = ""
     batch_size: int = 1
     lr: float = 0.0001
+    # lr: float = 0.001
     lora_rank: int = 0
     pretrain: str = "huggingface"
     activation_checkpointing: bool = False
     finetune_method: str = ""
     total_epochs: int = 1
     # SFT specific
-    max_steps: int = 2000
+    max_steps: int = 10000
     # PPO specific
     actor_weights: str = ""
     critic_weights: str = ""

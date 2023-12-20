@@ -12,8 +12,10 @@ from configs import get_configs
 def train(pretrain, batch_size, exp_name):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
-    cfg = get_configs("gpt2-medium") # change this line to select different models
-    cfg.max_steps = 2000 // batch_size
+    # cfg = get_configs("gpt2-medium/lora") # change this line to select different models
+    cfg = get_configs("gpt2-medium")
+    # batch_size = cfg.batch_size
+    cfg.max_steps = 10000 // batch_size
     cfg.batch_size = batch_size
     cfg.pretrain = pretrain
     assert pretrain == "huggingface" # make sure the pretrained model is in the format of huggingface.
@@ -23,17 +25,17 @@ def train(pretrain, batch_size, exp_name):
     model = GPT.from_pretrained(cfg)
     
     # load SFT dataset
-    # train_ds = EYLSFTStaticDataset(block_size=1024,
-    #                                split='train',
-    #                                max_examples=None,
-    #                                tokenizer_name="tiktoken/gpt2")
-    # test_ds = EYLSFTStaticDataset(block_size=1024,
-    #                               split='test',
-    #                               max_examples=None,
-    #                               tokenizer_name="tiktoken/gpt2")
+    train_ds = EYLSFTStaticDataset(block_size=1024,
+                                   split='train',
+                                   max_examples=None,
+                                   tokenizer_name="tiktoken/gpt2")
+    test_ds = EYLSFTStaticDataset(block_size=1024,
+                                  split='test',
+                                  max_examples=None,
+                                  tokenizer_name="tiktoken/gpt2")
     
-    train_ds = SFTDataset(block_size=1024, split="train", max_examples=None, tokenizer_name="tiktoken/gpt2")
-    test_ds = SFTDataset(block_size=1024, split="test", max_examples=None, tokenizer_name="tiktoken/gpt2")
+    # train_ds = SFTDataset(block_size=1024, split="train", max_examples=None, tokenizer_name="tiktoken/gpt2")
+    # test_ds = SFTDataset(block_size=1024, split="test", max_examples=None, tokenizer_name="tiktoken/gpt2")
     
     trainer = SFTTrainer(cfg, device, model, train_ds, test_ds)
     trainer.fit()
@@ -41,7 +43,7 @@ def train(pretrain, batch_size, exp_name):
 
 @click.command()
 @click.option('--pretrain', '-p', default="huggingface")
-@click.option('--batch-size', '-b', default=1)
+@click.option('--batch-size', '-b', default=4)
 @click.option('--exp-name', '-n', default="default")
 def main(pretrain, batch_size, exp_name):
     torch.manual_seed(1234)
